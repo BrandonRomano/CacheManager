@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp" >
+
+    <EditText
+        android:id="@+id/editText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="124dp"
+        android:ems="10"
+        android:hint="String to cache" />
+    
+    <Button
+        android:id="@+id/cacheButton"
+        android:onClick="onCacheClick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/editText"
+        android:layout_marginTop="23dp"
+        android:textSize="12dp"
+        android:text="Cache String" />
+
+    <Button
+        android:id="@+id/displayButton"
+        android:onClick="onDisplayClick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/cacheButton"
+        android:layout_alignBottom="@+id/cacheButton"
+        android:layout_marginLeft="17dp"
+        android:layout_toRightOf="@+id/cacheButton"
+        android:text="Display from Cache"
+        android:textSize="12dp" />
+
+</RelativeLayout>
