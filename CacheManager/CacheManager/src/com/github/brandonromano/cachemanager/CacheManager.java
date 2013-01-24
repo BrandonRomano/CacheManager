@@ -7,17 +7,21 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import org.jasypt.util.text.BasicTextEncryptor;
+
 import android.content.Context;
+import android.util.Log;
 
 public class CacheManager {
 	
 	private static CacheManager mInstance;
-	private static Context mContext;
-	private static String mCacheDir;
-
+	private Context mContext;
+	private String mCacheDir;
+	
 	private CacheManager(Context applicationContext){
 		mContext = applicationContext;
 		mCacheDir = mContext.getCacheDir().toString();
+		Log.d(Constants.Tag, "[CacheManager]: Initializing new instance");
 	}
 	
 	public static CacheManager getInstance(Context applicationContext)
@@ -45,9 +49,11 @@ public class CacheManager {
 		try {
 			out = new BufferedWriter(new FileWriter(file), 1024);
 			out.write(toWrite);
+			Log.d(Constants.Tag, "[CacheManager]: Writing to " + mCacheDir + fileName);
 		} catch (IOException e) {
+			Log.d(Constants.Tag, "[CacheManager]: Unsuccessful write to " + mCacheDir + fileName);
 			e.printStackTrace();
-			throw new CacheTransactionException(CacheTransactionException.writeExceptionAlert);
+			throw new CacheTransactionException(Constants.writeExceptionAlert);
 		}finally{
 			if(out != null)
 			{
@@ -84,10 +90,12 @@ public class CacheManager {
 			while ((currentLine = in.readLine()) != null) {
 				readString += currentLine;
 			}
+			Log.d(Constants.Tag, "[CacheManager]: Reading from " + mCacheDir + fileName);
 			return readString;
 		}catch(IOException e){
+			Log.d(Constants.Tag, "[CacheManager]: Unsuccessful read from " + mCacheDir + fileName);
 			e.printStackTrace();
-			throw new CacheTransactionException(CacheTransactionException.readExceptionAlert);
+			throw new CacheTransactionException(Constants.readExceptionAlert);
 		}finally{
 			if(in != null)
 			{
@@ -98,6 +106,57 @@ public class CacheManager {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Encrypts, and then writes a string to the given file name.  
+	 * The file will be placed in the current application's cache directory.
+	 * 
+	 * @param toWrite The String to write to a file.
+	 * @param fileName The File name that will be written to.
+	 * @param key The encryption/decryption key that will be used to write + read from this file.
+	 * @throws CacheTransactionException Throws the exception if writing failed.  Will 
+	 * not throw an exception in the result of a successful write.
+	 */
+	public void writeEncrypted(String toWrite, String fileName, String key) throws CacheTransactionException{
+		Log.d(Constants.Tag, "[CacheManager]: Encrypting for a write to " + mCacheDir + fileName);
+		Log.d(Constants.Tag, "[CacheManager]: Encrypting "+ toWrite);
+		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
+		textEncryptor.setPassword(key);
+		String encrypted = textEncryptor.encrypt(toWrite);
+		Log.d(Constants.Tag, "[CacheManager]: Encrypted Value:  "+ encrypted);
+		write(encrypted, fileName);
+	}
+	
+	/**
+	 * Reads a string from an existing file in the cache directory,
+	 * decrypts it, then returns it.  
+	 * 
+	 * @param fileName The file name of an existing file in the 
+	 * cache directory to be read.
+	 * @param key The encryption/decryption key that was used to write to this file.
+	 * @return Returns the decrypted version of what is read.  Null if read fails.
+	 * @throws CacheTransactionException Throws the exception if reading failed.  
+	 * Will not throw an exception in the result of a successful read.
+	 */
+	public String readEncrypted(String fileName, String key) throws CacheTransactionException{
+		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
+		textEncryptor.setPassword(key);
+		String encrypted = read(fileName);
+		String decrypted = textEncryptor.decrypt(encrypted);
+		Log.d(Constants.Tag, "[CacheManager]: Decrypting for a read from " + mCacheDir + fileName);
+		return decrypted;
+	}
+	
+	
+	/**
+	 * Deletes a file in the cache directory.
+	 * @param fileName The file to delete.
+	 */
+	public void deleteFile(String fileName){
+		Log.d(Constants.Tag, "[CacheManager]: Deleting the file " + mCacheDir + fileName);
+		File toDelete = new File(mCacheDir, fileName);
+		toDelete.delete();
 	}
 	
 }
