@@ -17,7 +17,7 @@ Included is the CacheManager library, as well as an example.
 
 License
 =======
-Copyright 2012 Brandon Romano
+Copyright 2013 Brandon Romano
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
