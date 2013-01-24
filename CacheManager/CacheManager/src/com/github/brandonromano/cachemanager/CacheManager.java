@@ -120,11 +120,9 @@ public class CacheManager {
 	 */
 	public void writeEncrypted(String toWrite, String fileName, String key) throws CacheTransactionException{
 		Log.d(Constants.Tag, "[CacheManager]: Encrypting for a write to " + mCacheDir + fileName);
-		Log.d(Constants.Tag, "[CacheManager]: Encrypting "+ toWrite);
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword(key);
 		String encrypted = textEncryptor.encrypt(toWrite);
-		Log.d(Constants.Tag, "[CacheManager]: Encrypted Value:  "+ encrypted);
 		write(encrypted, fileName);
 	}
 	
