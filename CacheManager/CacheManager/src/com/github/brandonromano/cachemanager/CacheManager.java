@@ -3,9 +3,11 @@ package com.github.brandonromano.cachemanager;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import org.jasypt.util.text.BasicTextEncryptor;
 
@@ -31,6 +33,11 @@ public class CacheManager {
 		}
 		return mInstance;
 	}
+	
+	
+	//=======================================
+	//========== String Read/Write ==========
+	//=======================================
 	
 	/**
 	 * Writes a string to the given file name.  The file will be placed
@@ -58,18 +65,19 @@ public class CacheManager {
 			if(out != null)
 			{
 				try {
+					out.flush();
 					out.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-			
 		}
 	}
 	
+	
 	/**
 	 * Reads a string from an existing file in the cache directory 
-	 * and returns it.  
+	 * and returns it.
 	 * 
 	 * @param fileName The file name of an existing file in the 
 	 * cache directory to be read.
@@ -108,6 +116,7 @@ public class CacheManager {
 		}
 	}
 	
+	
 	/**
 	 * Encrypts, and then writes a string to the given file name.  
 	 * The file will be placed in the current application's cache directory.
@@ -125,6 +134,7 @@ public class CacheManager {
 		String encrypted = textEncryptor.encrypt(toWrite);
 		write(encrypted, fileName);
 	}
+	
 	
 	/**
 	 * Reads a string from an existing file in the cache directory,
@@ -147,6 +157,83 @@ public class CacheManager {
 	}
 	
 	
+	//=======================================
+	//========== Binary Read/Write ==========
+	//=======================================
+	
+	/**
+	 * Writes an array of bytes to the given file name.
+	 * The file will be placed in the current application's cache directory.
+	 * 
+	 * @param toWrite The byte array to write to a file.
+	 * @param fileName The File name that will be written to.
+	 * @throws CacheTransactionException Throws the exception if writing failed.  Will 
+	 * not throw an exception in the result of a successful write.
+	 */
+	public void write(byte[] toWrite, String fileName) throws CacheTransactionException{
+		File file = new File(mCacheDir, fileName);
+		
+		FileOutputStream out = null;
+		try {
+			out = new FileOutputStream(file);
+			out.write(toWrite);
+		} catch (Exception e) {
+			Log.d(Constants.Tag, "[CacheManager]: Unsuccessful write to " + mCacheDir + fileName);
+			e.printStackTrace();
+			throw new CacheTransactionException(Constants.writeExceptionAlert);
+		} finally{
+			if(out != null)
+			{
+				try {
+					out.flush();
+					out.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	
+	/**
+	 * Reads an array of bytes from an existing file in the cache directory 
+	 * and returns it.
+	 * 
+	 * @param fileName The file name of an existing file in the 
+	 * cache directory to be read.
+	 * @return The byte array that was read
+	 * @throws CacheTransactionException Throws the exception if reading failed.  
+	 * Will not throw an exception in the result of a successful read.
+	 */
+	public byte[] readBinaryFile(String fileName) throws CacheTransactionException{
+		RandomAccessFile RAFile = null;
+		try {
+			File file = new File(mCacheDir, fileName);
+			RAFile = new RandomAccessFile(file, "r");
+			byte[] byteArray = new byte[(int)RAFile.length()];
+			RAFile.read(byteArray);
+			return byteArray;
+		} catch (Exception e) {
+			Log.d(Constants.Tag, "[CacheManager]: Unsuccessful read from " + mCacheDir + fileName);
+			e.printStackTrace();
+			throw new CacheTransactionException(Constants.readExceptionAlert);
+		} finally{
+			if(RAFile != null){
+				try {
+					RAFile.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+	}
+	
+
+	//===========================================
+	//========== FileSystem Management ==========
+	//===========================================
+
 	/**
 	 * Deletes a file in the cache directory.
 	 * @param fileName The file to delete.
