@@ -10,8 +10,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import org.jasypt.util.text.BasicTextEncryptor;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 public class CacheManager {
@@ -85,7 +90,7 @@ public class CacheManager {
 	 * @throws CacheTransactionException Throws the exception if reading failed.  
 	 * Will not throw an exception in the result of a successful read.
 	 */
-	public String read(String fileName) throws CacheTransactionException
+	public String readString(String fileName) throws CacheTransactionException
 	{
 		String readString = "";
 		File file = new File(mCacheDir, fileName);
@@ -143,19 +148,160 @@ public class CacheManager {
 	 * @param fileName The file name of an existing file in the 
 	 * cache directory to be read.
 	 * @param key The encryption/decryption key that was used to write to this file.
-	 * @return Returns the decrypted version of what is read.  Null if read fails.
+	 * @return Returns the decrypted version of what is read.
 	 * @throws CacheTransactionException Throws the exception if reading failed.  
 	 * Will not throw an exception in the result of a successful read.
 	 */
-	public String readEncrypted(String fileName, String key) throws CacheTransactionException{
+	public String readStringEncrypted(String fileName, String key) throws CacheTransactionException{
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword(key);
-		String encrypted = read(fileName);
+		String encrypted = readString(fileName); //Will throw here if nothing is read
 		String decrypted = textEncryptor.decrypt(encrypted);
 		Log.d(Constants.Tag, "[CacheManager]: Decrypting for a read from " + mCacheDir + fileName);
 		return decrypted;
 	}
 	
+	//=======================================
+	//========== JSON Read/Write ============
+	//=======================================
+	
+	/**
+	 * Writes a JSONObject to cache as a readable string to cache.  If JSONObject stores sensitive data
+	 * use writeEncrypted for the JSONObject.
+	 * 
+	 * @param obj The JSONObject to write.
+	 * @param fileName The File name that will be written to.
+	 * @throws CacheTransactionException Throws the exception if writing failed.  Will 
+	 * not throw an exception in the result of a successful write.
+	 */
+	public void write(JSONObject obj, String fileName) throws CacheTransactionException{
+		write(obj.toString(), fileName);
+	}
+	
+	
+	/**
+	 * Reads a JSONObject from a string file.  Initially runs readString(), so
+	 * there may be logs saying there was a successful read, but the log will be followed
+	 * up by another log stating that it was unable to create a JSONObject from the read string.
+	 * 
+	 * @param fileName The file name that will be read from.
+	 * @return The JSONObject the file was storing, in the result of a successful read.
+	 * @throws CacheTransactionException Throws the exception if reading failed, or the
+	 * creation of the JSONObject fails.
+	 */
+	public JSONObject readJSONObject(String fileName) throws CacheTransactionException{
+		String JSONString = readString(fileName); //Will throw exception here if string read fails...
+		try {
+			JSONObject obj = new JSONObject(JSONString);
+			return obj;
+		} catch (JSONException e) {
+			e.printStackTrace();
+			Log.d(Constants.Tag, "[CacheManager]: Successfully read the file " + mCacheDir + fileName + 
+					", but was unable to create a JSONObject from the String.");
+			throw new CacheTransactionException(Constants.readExceptionAlert);
+		}
+	}
+	
+	
+	/**
+	 * Writes the JSONObject as an encrypted string to cache.
+	 * 
+	 * @param obj The JSONObject to write.
+	 * @param fileName The File name that will be written to.
+	 * @param key The encryption/decryption key that will be used to read from this file.
+	 * @throws CacheTransactionException Throws the exception if writing failed.  Will 
+	 * not throw an exception in the result of a successful write.
+	 */
+	public void writeEncrypted(JSONObject obj, String fileName, String key) throws CacheTransactionException{
+		writeEncrypted(obj.toString(), fileName, key);
+	}
+	
+	
+	/**
+	 * Reads an encrypted JSONObject from a string file.  Initially runs readString(), so
+	 * there may be logs saying there was a successful read, but the log will be followed
+	 * up by another log stating that it was unable to create a JSONObject from the read string.
+	 * 
+	 * @param fileName The file name that will be read from.
+	 * @param key The encryption/decryption key that was used to write to this file.
+	 * @return The JSONObject the file was storing, in the result of a successful read.
+	 * @throws CacheTransactionException Throws the exception if reading failed, or the
+	 * creation of the JSONObject fails.
+	 */
+	public JSONObject readJSONObjectEncrypted(String fileName, String key) throws CacheTransactionException {
+		String JSONString = readStringEncrypted(fileName, key); //Will throw exception here if string read fails...
+		try {
+			JSONObject obj = new JSONObject(JSONString);
+			return obj;
+		} catch (JSONException e) {
+			e.printStackTrace();
+			Log.d(Constants.Tag, "[CacheManager]: Successfully read the file " + mCacheDir + fileName + 
+					", but was unable to create a JSONObject from the String.");
+			throw new CacheTransactionException(Constants.readExceptionAlert);
+		}
+	}
+	
+	
+	//=======================================
+	//========= Bitmap Read/Write ===========
+	//=======================================
+	
+	/**
+	 * Writes a Bitmap to the given file name.  The file will be placed
+	 * in the current application's cache directory.
+	 * 
+	 * @param bitmap The Bitmap to be written to cache.
+	 * @param format The format that the Bitmap will be written to cache. 
+	 * 	(Either CompressFormat.PNG, CompressFormat.JPEG, or CompressFormat.WEBP) 
+	 * @param quality The quality that the Bitmap will be written at.  0 is the lowest quality, 100
+	 *  is the highest quality.  If you are writing as .PNG format, this parameter will not matter 
+	 *  as PNG is lossless.
+	 * @param fileName The File name that will be written to.
+	 * @throws CacheTransactionException Throws the exception if writing failed.  Will 
+	 * not throw an exception in the result of a successful write.
+	 */
+	public void write(Bitmap bitmap, CompressFormat format, int quality, String fileName) throws CacheTransactionException {     
+	    
+		File file = new File(mCacheDir, fileName);
+		
+		FileOutputStream out = null;
+	    try {      
+	        out = new FileOutputStream(file); 
+	        bitmap.compress(format, quality, out);
+	    } catch (Exception e) {
+	    	Log.d(Constants.Tag, "[CacheManager]: Unsuccessful write to " + mCacheDir + fileName);
+	    	e.printStackTrace();
+			throw new CacheTransactionException(Constants.writeExceptionAlert);
+	    } finally{
+	    	if(out != null){
+	    		try{
+	    			out.flush();
+	    			out.close();
+	    		}catch(IOException e){
+	    			e.printStackTrace();
+	    		}
+	    	}
+	    }
+	}
+	
+	
+	/**
+	 * Reads a bitmap from the specified file and returns the bitmap.
+	 * 
+	 * @param fileName The File name that will be read from.
+	 * @return Returns the bitmap in the case of a successful read.
+	 * @throws CacheTransactionException CacheTransactionException Throws the exception if reading failed.  
+	 * Will not throw an exception in the result of a successful read.
+	 */
+	public Bitmap readBitmap(String fileName) throws CacheTransactionException {
+		File file = new File(mCacheDir, fileName);
+		Bitmap bitmap = BitmapFactory.decodeFile(file.toString());
+		if(bitmap != null){
+			return bitmap;
+		}else{ // BitmapFactory.decodeFile returns null if it can't decode a bitmap.
+			throw new CacheTransactionException(Constants.readExceptionAlert); 
+		}
+	}
 	
 	//=======================================
 	//========== Binary Read/Write ==========
@@ -194,7 +340,6 @@ public class CacheManager {
 		}
 	}
 	
-	
 	/**
 	 * Reads an array of bytes from an existing file in the cache directory 
 	 * and returns it.
@@ -229,7 +374,6 @@ public class CacheManager {
 		
 	}
 	
-
 	//===========================================
 	//========== FileSystem Management ==========
 	//===========================================
