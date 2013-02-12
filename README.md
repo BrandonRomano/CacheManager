@@ -1,7 +1,9 @@
 CacheManager
 ============
 
-CacheManager simplifies writing to cache in an Android Application.
+CacheManager simplifies writing to cache in an Android Application.  Currently, there is support for Caching Strings, Bitmaps, JSONObjects, and Byte Arrays.
+
+There are plans to significantly expand the support for other data types, as this project is still young.
 
 Writing to cache can now be executed in one line...
 CacheManager.getInstance(applicationContext).write(stringToWrite, fileName);
