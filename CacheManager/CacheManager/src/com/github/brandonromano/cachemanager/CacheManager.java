@@ -27,7 +27,7 @@ public class CacheManager {
 	
 	private CacheManager(Context applicationContext){
 		mContext = applicationContext;
-		mCacheDir = mContext.getCacheDir().toString();
+		mCacheDir = mContext.getCacheDir().toString()+ "/";
 		Log.d(Constants.Tag, "[CacheManager]: Initializing new instance");
 	}
 	
